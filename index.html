@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>THE USELESS BUTTON</title>
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+
+    background:
+        radial-gradient(circle at 50% 50%, #171717 0%, #050505 70%);
+
+    color: white;
+    font-family: Arial, Helvetica, sans-serif;
+
+    user-select: none;
+}
+
+
+
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+
+    background-image:
+        linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+
+    background-size: 40px 40px;
+
+    pointer-events: none;
+}
+
+
+
+.header {
+    position: fixed;
+    top: 32px;
+    left: 0;
+
+    width: 100%;
+
+    text-align: center;
+
+    pointer-events: none;
+
+    z-index: 20;
+}
+
+.header h1 {
+    font-size: 42px;
+    letter-spacing: 3px;
+}
+
+.header p {
+    margin-top: 8px;
+    color: #666;
+}
+
+
+
+.hud {
+    position: fixed;
+
+    top: 25px;
+    left: 25px;
+
+    padding: 15px 18px;
+
+    border: 1px solid #222;
+    border-radius: 12px;
+
+    background: rgba(10,10,10,.8);
+
+    font-family: monospace;
+
+    z-index: 30;
+}
+
+.hud div {
+    margin: 4px 0;
+}
+
+.value {
+    color: #fff;
+}
+
+
+
+#button {
+    position: absolute;
+
+    width: 180px;
+    height: 65px;
+
+    border: none;
+    border-radius: 15px;
+
+    background: white;
+    color: black;
+
+    font-size: 18px;
+    font-weight: bold;
+
+    cursor: pointer;
+
+    z-index: 10;
+
+    box-shadow:
+        0 0 0 1px rgba(255,255,255,.1),
+        0 15px 45px rgba(0,0,0,.5);
+
+    transition:
+        transform .08s linear,
+        box-shadow .15s,
+        background .15s;
+
+    will-change: left, top, transform;
+}
+
+#button:hover {
+    background: #eee;
+}
+
+
+#dangerRing {
+    position: absolute;
+
+    width: 350px;
+    height: 350px;
+
+    border-radius: 50%;
+
+    border: 1px dashed rgba(255,255,255,.08);
+
+    transform: translate(-50%, -50%);
+
+    pointer-events: none;
+
+    z-index: 3;
+
+    transition:
+        width .3s,
+        height .3s,
+        border-color .3s;
+}
+
+
+
+#message {
+    position: fixed;
+
+    left: 50%;
+    top: 50%;
+
+    transform: translate(-50%, -50%);
+
+    font-size: 32px;
+    font-weight: bold;
+
+    text-align: center;
+
+    opacity: 0;
+
+    pointer-events: none;
+
+    z-index: 100;
+
+    text-shadow:
+        0 5px 25px rgba(0,0,0,.8);
+
+    transition: opacity .2s;
+}
+
+/* =========================
+   COMBO
+========================= */
+
+#combo {
+    position: fixed;
+
+    left: 50%;
+    bottom: 35px;
+
+    transform: translateX(-50%);
+
+    color: #555;
+
+    font-family: monospace;
+
+    pointer-events: none;
+}
+
+
+
+#success {
+    position: fixed;
+
+    inset: 0;
+
+    background: rgba(0,0,0,.9);
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+
+    opacity: 0;
+    pointer-events: none;
+
+    z-index: 200;
+
+    transition: opacity .4s;
+}
+
+#success h2 {
+    font-size: 64px;
+    letter-spacing: 4px;
+}
+
+#success p {
+    margin-top: 15px;
+    color: #aaa;
+    font-size: 20px;
+}
+
+#again {
+    margin-top: 35px;
+
+    padding: 14px 28px;
+
+    border: none;
+    border-radius: 10px;
+
+    cursor: pointer;
+
+    font-weight: bold;
+    font-size: 16px;
+}
+</style>
+</head>
+
+
+<body>
+
+<div class="header">
+    <h1>THE USELESS BUTTON</h1>
+    <p>It has one job. You have one job.</p>
+</div>
+
+
+<div class="hud">
+    <div>ESCAPES : <span class="value" id="escapes">0</span></div>
+    <div>NEAR MISSES : <span class="value" id="nearMisses">0</span></div>
+    <div>DIFFICULTY : <span class="value" id="difficulty">1.0x</span></div>
+</div>
+
+
+<div id="dangerRing"></div>
+
+
+<button id="button">
+    CLICK ME
+</button>
+
+
+<div id="message"></div>
+
+
+<div id="combo">
+    STATUS: BUTTON IS CONFIDENT
+</div>
+
+
+<div id="success">
+
+    <h2>YOU DID IT.</h2>
+
+    <p>
+        Against all odds, you clicked the useless button.
+    </p>
+
+    <button id="again">
+        MAKE IT RUN AGAIN
+    </button>
+
+</div>
+
+
+<script>
+
+
+const button = document.getElementById("button");
+const dangerRing = document.getElementById("dangerRing");
+
+const message = document.getElementById("message");
+
+const escapesText = document.getElementById("escapes");
+const nearMissText = document.getElementById("nearMisses");
+const difficultyText = document.getElementById("difficulty");
+
+const comboText = document.getElementById("combo");
+
+const successScreen = document.getElementById("success");
+const againButton = document.getElementById("again");
+
+
+
+let buttonX = 0;
+let buttonY = 0;
+
+let mouseX = window.innerWidth / 2;
+let mouseY = window.innerHeight / 2;
+
+let previousMouseX = mouseX;
+let previousMouseY = mouseY;
+
+let velocityX = 0;
+let velocityY = 0;
+
+let escapes = 0;
+let nearMisses = 0;
+
+let difficulty = 1;
+
+let lastEscape = 0;
+
+let gameWon = false;
+
+
+
+const BUTTON_WIDTH = 180;
+const BUTTON_HEIGHT = 65;
+
+const SAFE_MARGIN = 90;
+
+const HEADER_SPACE = 130;
+
+const BASE_DANGER_RADIUS = 210;
+
+
+
+function randomStart() {
+
+    const minX = SAFE_MARGIN;
+
+    const maxX =
+        window.innerWidth -
+        BUTTON_WIDTH -
+        SAFE_MARGIN;
+
+    const minY = HEADER_SPACE;
+
+    const maxY =
+        window.innerHeight -
+        BUTTON_HEIGHT -
+        SAFE_MARGIN;
+
+    buttonX =
+        minX +
+        Math.random() *
+        Math.max(1, maxX - minX);
+
+    buttonY =
+        minY +
+        Math.random() *
+        Math.max(1, maxY - minY);
+
+    renderButton();
+}
+
+
+
+function renderButton() {
+
+    button.style.left = buttonX + "px";
+    button.style.top = buttonY + "px";
+
+    const angle =
+        Math.max(
+            -12,
+            Math.min(12, velocityX * 0.3)
+        );
+
+    button.style.transform =
+        `rotate(${angle}deg)`;
+}
+
+
+
+document.addEventListener("mousemove", event => {
+
+    const newX = event.clientX;
+    const newY = event.clientY;
+
+    velocityX = newX - previousMouseX;
+    velocityY = newY - previousMouseY;
+
+    previousMouseX = newX;
+    previousMouseY = newY;
+
+    mouseX = newX;
+    mouseY = newY;
+
+    updateDangerRing();
+
+    think();
+
+
+});
+
+
+
+function predictedMousePosition() {
+
+    /*
+        The faster you're moving,
+        the further ahead we predict.
+    */
+
+    const prediction =
+        8 + difficulty * 3;
+
+    return {
+
+        x:
+            mouseX +
+            velocityX * prediction,
+
+        y:
+            mouseY +
+            velocityY * prediction
+    };
+}
+
+
+
+function buttonCenter() {
+
+    return {
+
+        x:
+            buttonX +
+            BUTTON_WIDTH / 2,
+
+        y:
+            buttonY +
+            BUTTON_HEIGHT / 2
+    };
+}
+
+
+
+function distance(a, b) {
+
+    const dx = a.x - b.x;
+    const dy = a.y - b.y;
+
+    return Math.sqrt(dx * dx + dy * dy);
+}
+
+
+
+
+function think() {
+
+    if (gameWon)
+        return;
+
+
+    const center = buttonCenter();
+
+    const predicted =
+        predictedMousePosition();
+
+    const dist =
+        distance(center, predicted);
+
+
+    /*
+        Difficulty increases gradually.
+    */
+
+    difficulty =
+        Math.min(
+            5,
+            1 + escapes / 18
+        );
+
+    difficultyText.textContent =
+        difficulty.toFixed(1) + "x";
+
+
+    /*
+        The button becomes increasingly paranoid.
+    */
+
+    const dangerRadius =
+        BASE_DANGER_RADIUS +
+        difficulty * 20;
+
+
+    if (dist < dangerRadius) {
+
+        /*
+            Prevent escape spam every single
+            mousemove event.
+        */
+
+        const now = performance.now();
+
+        if (now - lastEscape > 110 / difficulty) {
+
+            escape();
+
+            lastEscape = now;
+        }
+    }
+
+
+    /*
+        Near miss detection.
+    */
+
+    if (
+        dist < 120 &&
+        dist > 70
+    ) {
+
+        nearMisses++;
+
+        nearMissText.textContent =
+            nearMisses;
+    }
+}
+
+
+
+function findBestEscape() {
+
+    const predicted =
+        predictedMousePosition();
+
+    const current =
+        buttonCenter();
+
+
+    let best = null;
+
+    let bestScore = -Infinity;
+
+
+    /*
+        Generate lots of possible
+        escape locations.
+    */
+
+    for (let i = 0; i < 80; i++) {
+
+        const x =
+            SAFE_MARGIN +
+            Math.random() *
+            (
+                window.innerWidth -
+                BUTTON_WIDTH -
+                SAFE_MARGIN * 2
+            );
+
+        const y =
+            HEADER_SPACE +
+            Math.random() *
+            (
+                window.innerHeight -
+                BUTTON_HEIGHT -
+                HEADER_SPACE -
+                SAFE_MARGIN
+            );
+
+
+        const candidate = {
+
+            x:
+                x +
+                BUTTON_WIDTH / 2,
+
+            y:
+                y +
+                BUTTON_HEIGHT / 2
+        };
+
+
+        /*
+            Distance from predicted cursor.
+        */
+
+        const cursorDistance =
+            distance(candidate, predicted);
+
+
+        /*
+            Distance from current location.
+
+            We don't want tiny movements.
+        */
+
+        const movementDistance =
+            distance(candidate, current);
+
+
+        /*
+            Avoid edges.
+        */
+
+        const edgeDistance =
+            Math.min(
+                x,
+                y,
+                window.innerWidth - x - BUTTON_WIDTH,
+                window.innerHeight - y - BUTTON_HEIGHT
+            );
+
+
+        /*
+            Directional escape.
+
+            If cursor approaches from the left,
+            locations on the right score higher.
+        */
+
+        const awayX =
+            current.x - predicted.x;
+
+        const awayY =
+            current.y - predicted.y;
+
+
+        const candidateX =
+            candidate.x - current.x;
+
+        const candidateY =
+            candidate.y - current.y;
+
+
+        const directionScore =
+            candidateX * awayX +
+            candidateY * awayY;
+
+
+        /*
+            Final score.
+        */
+
+        const score =
+
+            cursorDistance * 2.4 +
+
+            movementDistance * 0.6 +
+
+            edgeDistance * 1.5 +
+
+            directionScore * 0.002;
+
+
+        if (score > bestScore) {
+
+            bestScore = score;
+
+            best = {
+                x,
+                y
+            };
+        }
+    }
+
+
+    return best;
+}
+
+
+
+
+function escape() {
+
+    if (gameWon)
+        return;
+
+
+    const target =
+        findBestEscape();
+
+
+    if (!target)
+        return;
+
+
+    buttonX = target.x;
+    buttonY = target.y;
+
+
+    escapes++;
+
+    escapesText.textContent =
+        escapes;
+
+
+    /*
+        Make button physically react.
+    */
+
+    button.style.transition =
+        "none";
+
+    button.style.transform =
+        `scale(1.15) rotate(${Math.random() * 30 - 15}deg)`;
+
+
+    requestAnimationFrame(() => {
+
+        button.style.transition =
+            "transform .12s linear";
+
+        button.style.transform =
+            `scale(1) rotate(${Math.random() * 24 - 12}deg)`;
+    });
+
+
+    renderButton();
+
+
+    updateDifficultyMessage();
+}
+
+
+
+
+function updateDifficultyMessage() {
+
+    if (escapes < 5) {
+
+        comboText.textContent =
+            "STATUS: BUTTON IS CONFIDENT";
+
+    } else if (escapes < 15) {
+
+        comboText.textContent =
+            "STATUS: BUTTON HAS NOTICED YOU";
+
+    } else if (escapes < 30) {
+
+        comboText.textContent =
+            "STATUS: BUTTON IS CONCERNED";
+
+    } else if (escapes < 50) {
+
+        comboText.textContent =
+            "STATUS: BUTTON IS RUNNING FOR ITS LIFE";
+
+    } else if (escapes < 100) {
+
+        comboText.textContent =
+            "STATUS: YOU ARE NOT WINNING";
+
+    } else {
+
+        comboText.textContent =
+            "STATUS: THIS IS GETTING PERSONAL";
+    }
+}
+
+
+
+
+function updateDangerRing() {
+
+    const radius =
+        BASE_DANGER_RADIUS +
+        difficulty * 20;
+
+    dangerRing.style.width =
+        radius * 2 + "px";
+
+    dangerRing.style.height =
+        radius * 2 + "px";
+
+    dangerRing.style.left =
+        mouseX + "px";
+
+    dangerRing.style.top =
+        mouseY + "px";
+}
+
+
+
+button.addEventListener("click", () => {
+
+    if (gameWon)
+        return;
+
+
+    gameWon = true;
+
+
+  
+
+    successScreen.style.opacity = "1";
+    successScreen.style.pointerEvents = "auto";
+
+
+    comboText.textContent =
+        "STATUS: ABSOLUTE LEGEND";
+
+
+    /*
+        Stop the button.
+    */
+
+    button.style.transform =
+        "scale(1.25)";
+
+
+    /*
+        Confetti-like particles.
+    */
+
+    createCelebration();
+});
+
+
+
+function createCelebration() {
+
+    for (let i = 0; i < 80; i++) {
+
+        const particle =
+            document.createElement("div");
+
+        particle.style.position =
+            "fixed";
+
+        particle.style.left =
+            "50%";
+
+        particle.style.top =
+            "50%";
+
+        particle.style.width =
+            "7px";
+
+        particle.style.height =
+            "7px";
+
+        particle.style.background =
+            "white";
+
+        particle.style.borderRadius =
+            "50%";
+
+        particle.style.pointerEvents =
+            "none";
+
+        particle.style.zIndex =
+            "300";
+
+
+        const angle =
+            Math.random() *
+            Math.PI * 2;
+
+        const distance =
+            150 +
+            Math.random() * 500;
+
+
+        particle.animate([
+
+            {
+                transform:
+                    "translate(-50%, -50%) scale(1)",
+
+                opacity: 1
+            },
+
+            {
+                transform:
+                    `translate(
+                        calc(-50% + ${Math.cos(angle) * distance}px),
+                        calc(-50% + ${Math.sin(angle) * distance}px)
+                    ) scale(0)`,
+
+                opacity: 0
+            }
+
+        ], {
+
+            duration:
+                900 +
+                Math.random() * 700,
+
+            easing:
+                "cubic-bezier(.2,.8,.2,1)"
+        });
+
+
+        document.body.appendChild(particle);
+
+
+        setTimeout(() => {
+            particle.remove();
+        }, 1800);
+    }
+}
+
+
+
+
+againButton.addEventListener("click", () => {
+
+    gameWon = false;
+
+    escapes = 0;
+    nearMisses = 0;
+    difficulty = 1;
+
+    escapesText.textContent = "0";
+    nearMissText.textContent = "0";
+    difficultyText.textContent = "1.0x";
+
+    comboText.textContent =
+        "STATUS: BUTTON IS CONFIDENT";
+
+
+    successScreen.style.opacity = "0";
+    successScreen.style.pointerEvents = "none";
+
+
+    randomStart();
+});
+
+
+document.addEventListener("touchmove", event => {
+
+    if (!event.touches.length)
+        return;
+
+
+    const touch =
+        event.touches[0];
+
+
+    mouseX = touch.clientX;
+    mouseY = touch.clientY;
+
+    updateDangerRing();
+
+    think();
+});
+
+
+
+window.addEventListener("resize", () => {
+
+    buttonX =
+        Math.max(
+            SAFE_MARGIN,
+            Math.min(
+                window.innerWidth -
+                BUTTON_WIDTH -
+                SAFE_MARGIN,
+
+                buttonX
+            )
+        );
+
+    buttonY =
+        Math.max(
+            HEADER_SPACE,
+            Math.min(
+                window.innerHeight -
+                BUTTON_HEIGHT -
+                SAFE_MARGIN,
+
+                buttonY
+            )
+        );
+
+    renderButton();
+});
+
+
+
+let secretCode = "";
+const cheatCode = "dev";
+
+document.addEventListener("keydown", (event) => {
+
+    secretCode += event.key.toUpperCase();
+
+    // Only keep the last few characters
+    if (secretCode.length > cheatCode.length) {
+        secretCode = secretCode.slice(-cheatCode.length);
+    }
+
+    // CHEAT ACTIVATED
+    if (secretCode === cheatCode) {
+
+        gameWon = false;
+
+        // Make the button completely catchable
+        button.style.pointerEvents = "auto";
+
+        // Stop all escaping
+        lastEscape = performance.now() + 999999999;
+
+        // Put it in the center
+        buttonX =
+            window.innerWidth / 2 -
+            BUTTON_WIDTH / 2;
+
+        buttonY =
+            window.innerHeight / 2 -
+            BUTTON_HEIGHT / 2;
+
+        button.style.left = buttonX + "px";
+        button.style.top = buttonY + "px";
+
+        button.style.transform = "scale(1.2)";
+
+        // Remove danger ring
+        dangerRing.style.display = "none";
+
+        // Secret message only YOU know about
+        comboText.textContent = "STATUS: ???";
+
+        // Reset typing buffer
+        secretCode = "";
+    }
+});
+
+randomStart();
+
+updateDangerRing();
+
+</script>
+
+</body>
+</html>
